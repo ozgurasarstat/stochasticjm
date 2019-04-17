@@ -4,7 +4,8 @@ fit_ld <- function(fixed,
                    id,
                    timeVar,
                    process,
-                   priors){
+                   priors,
+                   ...){
 
   ## number of subjects and repeated measures
   ngroup  <- data[, id] %>% unique %>% length
@@ -48,6 +49,6 @@ fit_ld <- function(fixed,
                     ind = indices,
                     priors = priors)
 
-  res <- stan(model_code = bm_mod, data = data_stan)#, ...)
+  res <- stan(model_code = bm_mod, data = data_stan, ...)
 
 }
