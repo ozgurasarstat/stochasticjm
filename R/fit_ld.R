@@ -37,7 +37,6 @@ fit_ld <- function(fixed,
 
   ## prepare the data
   data_stan <- list(ntot = ntot,
-                    id = ids,
                     y = y,
                     p = p,
                     q = q,
@@ -48,7 +47,7 @@ fit_ld <- function(fixed,
                     locs = locs,
                     ind = indices,
                     priors = priors)
-
-  res <- stan(model_code = bm_mod, data = data_stan, ...)
+  mod <- rstan::stan_model(model_code = bm_mod, auto_write = TRUE)
+  res <- rstan::sampling(mod, data = data_stan, ...)
 
 }
