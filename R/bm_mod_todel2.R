@@ -1,4 +1,4 @@
-bm_mod2 = "
+bm_mod_todel2 = "
 
 //functions{
 

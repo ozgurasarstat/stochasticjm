@@ -32,6 +32,7 @@ vector[ntot] d_B;
 for(i in 1:ngroup){
 d_B[ind[i,1]:ind[i,2]] = to_vector(d[ind[i,1]:ind[i,2],] * to_matrix(B[i,],q,1));
 }
+
 linpred = x * alpha + d_B;
 Sigma = quad_form_diag(Omega, sigma_B);
 }
@@ -46,6 +47,7 @@ sigma_B ~ cauchy(0, priors[3]);
 sigma_Z ~ cauchy(0, priors[4]);
 y ~ normal(linpred, sigma_Z);
 }
+
 generated quantities{
 real sigmasq;
 sigmasq = sigma_Z^2;
