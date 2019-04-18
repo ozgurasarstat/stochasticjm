@@ -17,7 +17,7 @@ wrap <- function(fixed,
          priors[names(priors_full)[i]] <- priors_full[names(priors_full)[i]]
        }
      }
-   }else if(model == "bm"){
+   }else if(model %in% c("exp", "bm")){
      priors_full <- list(alpha = 5,
                          Omega = 2,
                          sigma_B = 5,
@@ -38,7 +38,7 @@ wrap <- function(fixed,
     data[, id] <- rep(1:ngroup, nrepeat)
 
     ## time points
-    if(model == "bm"){
+    if(model %in% c("bm", "exp")){
       locs <- data[, timeVar]
     }
 
@@ -84,6 +84,19 @@ wrap <- function(fixed,
                      priors = unlist(priors),
                      ind = indices)
       res <- stan(model_code = bm_mod, data = dat_bm, ...)
+    }else if(model == "exp"){
+      dat_exp <- list(ntot = ntot,
+                     y = y,
+                     x = x,
+                     d = d,
+                     p = p,
+                     q = q,
+                     nrepeat = nrepeat,
+                     locs = locs,
+                     ngroup = ngroup,
+                     priors = unlist(priors),
+                     ind = indices)
+      res <- stan(model_code = exp_cor_mod, data = dat_exp, ...)
     }
 
   return(res)
