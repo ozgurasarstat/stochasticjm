@@ -44,10 +44,10 @@ fit_ld <- function(fixed,
                     nrepeat = nrepeat,
                     x = x,
                     d = d,
-                    locs = locs,
+                    #locs = locs,
                     ind = indices,
                     priors = priors)
   mod <- rstan::stan_model(model_code = bm_mod, auto_write = TRUE)
-  res <- rstan::sampling(mod, data = data_stan, ...)
+  res <- rstan::sampling(mod, data = data_stan)#, ...)
 
 }
