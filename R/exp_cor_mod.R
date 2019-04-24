@@ -2,14 +2,14 @@ exp_cor_mod = "
 
 functions{
 
-matrix create_covmat_exp(vector t, int mi, real range, real sigmasq_W){
+matrix create_covmat_exp(vector t, int mi, real phi, real sigmasq_W){
 
 matrix[mi, mi] out;
 
 for (i in 1:(mi-1)){
 out[i, i] = sigmasq_W ;
 for (j in (i+1):mi){
-out[i, j] = sigmasq_W * exp(-fabs(t[i] - t[j])*range);
+out[i, j] = sigmasq_W * exp(-fabs(t[i] - t[j]) * phi);
 out[j, i] = out[i, j];
 }
 }
@@ -39,13 +39,13 @@ vector[q] zero_B = rep_vector(0, q);
 }
 
 parameters{
-vector[p] alpha;              // fixed effects coefficients - qr
+vector[p] alpha;              // fixed effects coefficients
 matrix[ngroup, q] B;          // random effects coefficients
-vector[ntot] W;
-corr_matrix[q] Omega;             // correlation matrix for random effects
+vector[ntot] W;               // process
+corr_matrix[q] Omega;         // correlation matrix for random effects
 vector<lower = 0>[q] sigma_B; // scale parameters for random effects
-real<lower = 0> sigma_W;
-real<lower = 0> range;
+real<lower = 0> sigma_W;      // sd of process
+real<lower = 0> phi;          //range parameter
 real<lower = 0> sigma_Z;      // scale parameter of measurement error
 }
 
@@ -70,7 +70,7 @@ for(i in 1:ngroup){
 B[i] ~ multi_normal(zero_B, Sigma);
 W[ind[i, 1]:ind[i, 2]] ~
   multi_normal(rep_vector(0.0, nrepeat[i]),
-     create_covmat_exp(locs[ind[i, 1]:ind[i, 2]], nrepeat[i], range, sigmasq_W));
+     create_covmat_exp(locs[ind[i, 1]:ind[i, 2]], nrepeat[i], phi, sigmasq_W));
 }
 Omega ~ lkj_corr(priors[2]);
 sigma_B ~ cauchy(0, priors[3]);
