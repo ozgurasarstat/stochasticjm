@@ -9,7 +9,7 @@ matrix[mi, mi] out;
 for (i in 1:(mi-1)){
 out[i, i] = sigmasq_W ;
 for (j in (i+1):mi){
-out[i, j] = sigmasq_W * exp(-fabs(t[i] - t[j]) * phi);
+out[i, j] = sigmasq_W * exp(-fabs(t[i] - t[j]) / phi);
 out[j, i] = out[i, j];
 }
 }
@@ -45,7 +45,7 @@ vector[ntot] W;               // process
 corr_matrix[q] Omega;         // correlation matrix for random effects
 vector<lower = 0>[q] sigma_B; // scale parameters for random effects
 real<lower = 0> sigma_W;      // sd of process
-real<lower = 0> phi;          //range parameter
+real<lower = 0> phi;          // range parameter
 real<lower = 0> sigma_Z;      // scale parameter of measurement error
 }
 
