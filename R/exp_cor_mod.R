@@ -5,6 +5,7 @@ functions{
 matrix create_covmat_exp(vector t, int mi, real phi, real sigmasq_W){
 
 matrix[mi, mi] out;
+matrix[mi, mi] L;
 
 for (i in 1:(mi-1)){
 out[i, i] = sigmasq_W ;
@@ -15,7 +16,9 @@ out[j, i] = out[i, j];
 }
 out[mi, mi] = sigmasq_W;
 
-return out;
+L = cholesky_decompose(out);
+
+return L;
 }
 
 }
@@ -41,7 +44,7 @@ vector[q] zero_B = rep_vector(0, q);
 parameters{
 vector[p] alpha;              // fixed effects coefficients
 matrix[ngroup, q] B;          // random effects coefficients
-vector[ntot] W;               // process
+vector[ntot] Wstar;           // process
 corr_matrix[q] Omega;         // correlation matrix for random effects
 vector<lower = 0>[q] sigma_B; // scale parameters for random effects
 real<lower = 0> sigma_W;      // sd of process
@@ -50,6 +53,7 @@ real<lower = 0> sigma_Z;      // scale parameter of measurement error
 }
 
 transformed parameters{
+vector[ntot] W;
 cov_matrix[q] Sigma;
 vector[ntot] linpred;
 vector[ntot] d_B;
@@ -57,6 +61,10 @@ real sigmasq_W = square(sigma_W);
 
 for(i in 1:ngroup){
 d_B[ind[i, 1]:ind[i, 2]] = to_vector(d[ind[i, 1]:ind[i, 2], ] * to_matrix(B[i, ], q, 1));
+
+W[ind[i, 1]:ind[i, 2]] =
+     create_covmat_exp(locs[ind[i, 1]:ind[i, 2]], nrepeat[i], phi, sigmasq_W) *
+     Wstar[ind[i, 1]:ind[i, 2]];
 }
 
 linpred = x * alpha + d_B + W;
@@ -64,18 +72,18 @@ Sigma = quad_form_diag(Omega, sigma_B);
 }
 
 model{
-
 alpha ~ cauchy(0, priors[1]);
+
 for(i in 1:ngroup){
 B[i] ~ multi_normal(zero_B, Sigma);
-W[ind[i, 1]:ind[i, 2]] ~
-  multi_normal(rep_vector(0.0, nrepeat[i]),
-     create_covmat_exp(locs[ind[i, 1]:ind[i, 2]], nrepeat[i], phi, sigmasq_W));
 }
+
+Wstar ~ std_normal();
 Omega ~ lkj_corr(priors[2]);
 sigma_B ~ cauchy(0, priors[3]);
 sigma_W ~ cauchy(0, priors[4]);
-sigma_Z ~ cauchy(0, priors[4]);
+phi ~ cauchy(0, priors[4]);
+sigma_Z ~ cauchy(0, priors[5]);
 y ~ normal(linpred, sigma_Z);
 }
 

@@ -22,6 +22,7 @@ wrap <- function(fixed,
                          Omega = 2,
                          sigma_B = 5,
                          sigma_W = 5,
+                         phi = 5,
                          sigma_Z = 5)
      for(i in 1:5){
        if(!(names(priors_full)[i] %in% names(priors))){
