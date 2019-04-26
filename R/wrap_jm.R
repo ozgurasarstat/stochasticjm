@@ -116,15 +116,15 @@ fit_jm <- function(fixed_long,
   Q_ind <- cbind((0:(ngroup-1))*Q+1, (1:ngroup)*Q)
 
   #combine and t_quad and locs
-  t_quad_locs_comb <- c()
+  t_quad_locs <- c()
   for(i in 1:ngroup){
-    t_quad_locs_comb <- c(t_quad_locs_comb, c(t_quad[((i-1)*Q+1):(i*Q)]), locs_list[[i]])
+    t_quad_locs_comb <- c(t_quad_locs, c(t_quad[((i-1)*Q+1):(i*Q)]), locs_list[[i]])
   }
 
-  nW <- length(t_quad_locs_comb)
+  nW_ext <- length(t_quad_locs)
 
-  t_quad_locs_ind <- d_ind + Q
-  t_quad_locs_ind[1, 1] <- 1
+  W_ext_ind <- d_ind + Q
+  W_ext_ind[1, 1] <- 1
 
   ## prepare data as a list to be passed to stan
 
@@ -154,9 +154,9 @@ fit_jm <- function(fixed_long,
                     d_quad = d_quad,
                     wt_quad = wt_quad,
                     t_quad = t_quad,
-                    t_quad_locs_ind = t_quad_locs_ind,
-                    nW = nW,
-                    t_quad_locs_comb = t_quad_locs_comb
+                    W_ext_ind = W_ext_ind,
+                    nW_ext = nW_ext,
+                    t_quad_locs = t_quad_locs
                     )
 
   res <- stan(model_code = exp_cor_jm, data = data_stan, ...)
