@@ -33,7 +33,7 @@ int<lower = 1> q;           // number of covariates in the random effects design
 int<lower = 1> ngroup;      // number of subjects/clusters/groups
 matrix[ntot, p] x;          // fixed effects design matrix
 matrix[ntot, q] d;          // random effects design matrix, block diagonal
-vector[ntot] locs;
+//vector[ntot] locs;
 vector[6] priors_long; // prior hyperparameters, order: alpha, Omega, sigma_B, sigma_W, sigma_Z
 int nrepeat[ngroup];
 
@@ -63,8 +63,10 @@ vector[4] priors_surv;  //prior hyperparameters, order: zeta, omega, eta
 
 vector[ntot_quad] wt_quad; // extended quadrature weights to be used during Gauss-Legendre approx.
 
+vector[ntot_quad] t_quad;
+
 int<lower = 1> nW_ext;
-vector[nW_ext] t_quad_locs;
+vector[nW_ext] t_quad_locs_T;
 
 }
 
@@ -75,7 +77,7 @@ vector[q] zero_B = rep_vector(0, q);
 parameters{
 vector[p] alpha;              // fixed effects coefficients
 matrix[ngroup, q] B;          // random effects coefficients
-vector[nW_ext] Wstar_ext;             // process
+vector[nW_ext] Wstar_ext;     // process
 corr_matrix[q] Omega;         // correlation matrix for random effects
 vector<lower = 0>[q] sigma_B; // scale parameters for random effects
 real<lower = 0> sigma_W;      // sd of process
@@ -94,6 +96,7 @@ real sigmasq_W = square(sigma_W);
 vector[nW_ext] W_ext;
 vector[ntot] W_long;
 vector[ntot_quad] W_surv;
+vector[ngroup] W_T;
 
 cov_matrix[q] Sigma;
 vector[ntot] linpred;
@@ -119,28 +122,34 @@ Bmat[, i] = to_vector(B[, i]);
 }
 
 for(i in 1:ngroup){
-d_B[ind[i, 1]:ind[i, 2]] = to_vector(d[ind[i, 1]:ind[i, 2], ] * to_matrix(B[i, ], q, 1));
+d_B[d_ind[i, 1]:d_ind[i, 2]] = to_vector(d[d_ind[i, 1]:d_ind[i, 2], ] * to_matrix(B[i, ], q, 1));
 d_T_B[i] = sum(d_T[i] .* Bmat[i]);
 d_quad_B[Q_ind[i, 1]:Q_ind[i, 2]] = d_quad[Q_ind[i, 1]:Q_ind[i, 2], ] * to_vector(B[i, ]);
 }
 
 for(i in 1:ngroup){
-W_ext[ind_W_ext[i, 1]:ind_W_ext[i, 2]] =
-      create_covmat_exp(t_quad_locs[ind_W_ext[i, 1]:ind_W_ext[i, 2]], (nrepeat[i] + Q), phi, sigmasq_W) *
-      Wstar[ind_W_ext[i, 1]:ind_W_ext[i, 2]];
+W_ext[W_ext_ind[i, 1]:W_ext_ind[i, 2]] =
+      create_covmat_exp(t_quad_locs_T[W_ext_ind[i, 1]:W_ext_ind[i, 2]], (nrepeat[i] + Q), phi, sigmasq_W) *
+      Wstar_ext[W_ext_ind[i, 1]:W_ext_ind[i, 2]];
 }
 
-linpred = x * alpha + d_B + W;
+for(i in 1:ngroup){
+W_surv[Q_ind[i, 1]:Q_ind[i, 2]] = to_vector(W_ext[W_ext_ind[i, 1]:W_ext_ind[i, 2]])[1:Q];
+W_T[i]                          = to_vector(W_ext[W_ext_ind[i, 1]:W_ext_ind[i, 2]])[Q+1];
+W_long[d_ind[i, 1]:d_ind[i, 2]] = to_vector(W_ext[W_ext_ind[i, 1]:W_ext_ind[i, 2]])[(Q + 2):(nrepeat[i] + Q + 1)];
+}
+
+linpred = x * alpha + d_B + W_long;
 Sigma = quad_form_diag(Omega, sigma_B);
 
 //survival sub-model, lsd: log-survival density
 lsd_expr1_bh = log_lambda + log_nu + (exp(log_nu) - 1) * log(S);
 lsd_expr1_fix = c * omega;
-lsd_expr1_ystar = x_T * alpha + d_T_B;
+lsd_expr1_ystar = x_T * alpha + d_T_B + W_T;
 lsd_expr1 = E .* (lsd_expr1_bh + lsd_expr1_fix + eta * lsd_expr1_ystar);
 lsd_expr2_quad_bh = log_lambda + log_nu + (exp(log_nu) - 1) * log(t_quad);
 lsd_expr2_quad_fix = c_quad * omega;
-lsd_expr2_quad_ystar = x_quad * alpha + d_quad_B;
+lsd_expr2_quad_ystar = x_quad * alpha + d_quad_B + W_surv;
 lsd_expr2_quad = wt_quad .* exp(lsd_expr2_quad_bh +
                                 lsd_expr2_quad_fix +
                                 eta * lsd_expr2_quad_ystar);
@@ -153,18 +162,19 @@ lsd = lsd_expr1 - lsd_expr2;
 }
 
 model{
-alpha ~ cauchy(0, priors[1]);
+alpha ~ cauchy(0, priors_long[1]);
 
 for(i in 1:ngroup){
 B[i] ~ multi_normal(zero_B, Sigma);
 }
 
-Wstar ~ std_normal();
-Omega ~ lkj_corr(priors[2]);
-sigma_B ~ cauchy(0, priors[3]);
-sigma_W ~ cauchy(0, priors[4]);
-phi ~ cauchy(0, priors[4]);
-sigma_Z ~ cauchy(0, priors[5]);
+Wstar_ext ~ std_normal();
+Omega ~ lkj_corr(priors_long[2]);
+sigma_B ~ cauchy(0, priors_long[3]);
+sigma_W ~ cauchy(0, priors_long[4]);
+phi ~ cauchy(0, priors_long[5]);
+sigma_Z ~ cauchy(0, priors_long[6]);
+
 y ~ normal(linpred, sigma_Z);
 
 log_lambda ~ cauchy(0, priors_surv[1]);

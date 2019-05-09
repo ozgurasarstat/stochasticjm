@@ -39,11 +39,11 @@ wrap_jm <- function(fixed_long,
   nrepeat <- data_long[, id_long] %>% table %>% as.numeric
 
   ## time variable
-  locs_list <- split(data[, timeVar], data[, id_long])
+  locs_list <- split(data_long[, timeVar], data_long[, id_long])
 
   ## be sure that id is: 1, 2, 3, ...
   data_long[, id_long] <- rep(1:ngroup, nrepeat)
-  #l_id <- data_long[, id_long]
+  l_id <- data_long[, id_long]
 
   ## creat survival data
   data_surv[, id_surv] <- rep(1:nrow(data_surv))
@@ -106,7 +106,7 @@ wrap_jm <- function(fixed_long,
 
   ## prior hyperparameters
   priors_long <- unlist(priors)[1:6]
-  priors_long <- unlist(priors)[7:10]
+  priors_surv <- unlist(priors)[7:10]
 
   # prepare a matrix of indices to select rows of d in for loop in stan
   cumsum_nrepeat <- cumsum(nrepeat)
@@ -116,32 +116,34 @@ wrap_jm <- function(fixed_long,
   Q_ind <- cbind((0:(ngroup-1))*Q+1, (1:ngroup)*Q)
 
   #combine and t_quad and locs
-  t_quad_locs <- c()
+  t_quad_locs_T <- c()
   for(i in 1:ngroup){
-    t_quad_locs_comb <- c(t_quad_locs, c(t_quad[((i-1)*Q+1):(i*Q)]), locs_list[[i]])
+    t_quad_locs_T <- c(t_quad_locs_T, c(t_quad[((i-1)*Q+1):(i*Q)], S[i], locs_list[[i]]))
   }
 
-  nW_ext <- length(t_quad_locs)
+  nW_ext <- length(t_quad_locs_T)
 
-  W_ext_ind <- d_ind + Q
-  W_ext_ind[1, 1] <- 1
+  W_ext_ind <- d_ind
+  W_ext_ind[, 1] <- W_ext_ind[, 1] + c(0, (1:(ngroup-1)) * (Q + 1))
+  W_ext_ind[, 2] <- W_ext_ind[, 2] + (1:ngroup) * (Q + 1)
 
   ## prepare data as a list to be passed to stan
 
   data_stan <- list(ntot = ntot,
-                    id = l_id,
                     y = y,
                     p = p,
                     q = q,
                     ngroup = ngroup,
-                    nrepeat = nrepeat,
                     x = x,
                     d = d,
+                    #locs = locs,
+                    id = l_id,
+                    priors_long = priors_long,
+                    nrepeat = nrepeat,
+                    Q = Q,
                     d_ind = d_ind,
                     Q_ind = Q_ind,
-                    priors_long = priors_long,
-                    priors_surv = priors_surv,
-                    Q = Q,
+                    W_ext_ind = W_ext_ind,
                     ntot_quad = ntot_quad,
                     S = S,
                     E = E,
@@ -152,14 +154,13 @@ wrap_jm <- function(fixed_long,
                     x_quad = x_quad,
                     d_T = d_T,
                     d_quad = d_quad,
+                    priors_surv = priors_surv,
                     wt_quad = wt_quad,
                     t_quad = t_quad,
-                    W_ext_ind = W_ext_ind,
                     nW_ext = nW_ext,
-                    t_quad_locs = t_quad_locs
-                    )
+                    t_quad_locs_T = t_quad_locs_T)
 
-  res <- stan(model_code = exp_cor_jm, data = data_stan, ...)
+  res <- stan(model_code = exp_cor_jm, data = data_stan)#, ...)
 
   return(res)
 
