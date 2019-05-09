@@ -1,4 +1,4 @@
-fit_jm <- function(fixed_long,
+wrap_jm <- function(fixed_long,
                    random_long,
                    fixed_surv,
                    data_long,
