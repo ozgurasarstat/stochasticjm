@@ -3,6 +3,16 @@ library(joineRML)
 
 head(renal$prot)
 
+renal$prot$id <- as.character(renal$prot$id)
+renal$haem$id <- as.character(renal$haem$id)
+renal$gfr$id  <- as.character(renal$gfr$id)
+renal$surv$id <- as.character(renal$surv$id)
+
+renal$prot$gender <- as.character(renal$prot$gender)
+renal$haem$gender <- as.character(renal$haem$gender)
+renal$gfr$gender  <- as.character(renal$gfr$gender)
+renal$surv$gender <- as.character(renal$surv$gender)
+
 # ids which has data only before 1 year after transplantation
 id_prot <- names(which(tapply(renal$prot$years, renal$prot$id, function(x) max(x) >= 1) == FALSE))
 id_haem <- names(which(tapply(renal$haem$years, renal$haem$id, function(x) max(x) >= 1) == FALSE))
@@ -37,4 +47,4 @@ renal_data <- list(renal_original = renal,
                    haem_surv_short = haem_surv_short,
                    gfr_surv_short = gfr_surv_short)
 
-usethis::use_data(renal_data, renal_data)
+usethis::use_data(renal_data, renal_data, overwrite = TRUE)
