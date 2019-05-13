@@ -160,7 +160,7 @@ wrap_jm <- function(fixed_long,
                     nW_ext = nW_ext,
                     t_quad_locs_T = t_quad_locs_T)
 
-  res <- stan(model_code = exp_cor_jm, data = data_stan)#, ...)
+  res <- stan(model_code = exp_cor_jm, data = data_stan, ...)
 
   return(res)
 
